@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nexus Journal">
+<meta name="theme-color" content="#0d1117">
+<title>Nexus Trading Journal</title>
+<style>
+  :root {
+    --bg: #0d1117; --bg2: #111827; --bg3: #1a1f2e; --border: #1e2533;
+    --green: #00e676; --red: #ff5252; --orange: #ff9800; --purple: #a78bfa;
+    --text: #e0e6f0; --muted: #4a5568; --sub: #6b7280;
+    --safe-top: env(safe-area-inset-top, 0px); --safe-bot: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, 'SF Pro Display', system-ui, sans-serif; overscroll-behavior: none; }
+  body { padding-top: var(--safe-top); padding-bottom: var(--safe-bot); }
+  #app { display: flex; flex-direction: column; height: 100vh; max-width: 480px; margin: 0 auto; }
+  #header { padding: 14px 16px 10px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; background: var(--bg); }
+  .logo { font-size: 16px; font-weight: 800; letter-spacing: 2px; color: var(--green); font-family: monospace; }
+  .sublogo { font-size: 11px; color: var(--muted); letter-spacing: 1px; margin-top: 2px; }
+  .header-pnl { font-size: 22px; font-weight: 800; font-family: monospace; text-align: right; }
+  #nav { display: flex; border-bottom: 1px solid var(--border); background: var(--bg); flex-shrink: 0; }
+  .nav-btn { flex: 1; padding: 12px 2px; background: none; border: none; border-bottom: 2px solid transparent; color: var(--muted); font-size: 11px; font-weight: 600; cursor: pointer; }
+  .nav-btn.active { color: var(--green); border-bottom-color: var(--green); }
+  #content { flex: 1; overflow-y: auto; padding: 12px; -webkit-overflow-scrolling: touch; }
+  .card { background: var(--bg2); border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid var(--border); }
+  .section-title { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; margin-bottom: 12px; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: 0.5px; }
+  .field input, .field select, .field textarea { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 16px; padding: 11px 12px; outline: none; width: 100%; -webkit-appearance: none; appearance: none; }
+  .field textarea { resize: none; height: 64px; font-size: 14px; }
+  .field input:focus, .field select:focus { border-color: var(--green); }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .mb10 { margin-bottom: 10px; } .mt16 { margin-top: 16px; }
+  .toggle { display: flex; gap: 6px; }
+  .toggle-btn { flex: 1; padding: 10px 6px; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.15s; text-align: center; }
+  .toggle-btn.long { background: #00e67618; border-color: var(--green); color: var(--green); }
+  .toggle-btn.short { background: #ff525218; border-color: var(--red); color: var(--red); }
+  .toggle-btn.instrument-active { background: #7c3aed22; border-color: var(--purple); color: var(--purple); }
+  .toggle-btn .t-main { font-weight: 800; font-size: 14px; }
+  .toggle-btn .t-sub { font-size: 10px; opacity: 0.7; margin-top: 2px; }
+  .toggle-btn.yes { background: #00e67618; border-color: var(--green); color: var(--green); }
+  .toggle-btn.no { background: #ff525218; border-color: var(--red); color: var(--red); }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { padding: 7px 14px; background: var(--bg3); border: 1px solid var(--border); border-radius: 20px; color: var(--muted); font-size: 13px; cursor: pointer; }
+  .chip.active { background: #00e67618; border-color: var(--green); color: var(--green); }
+  .preview-pnl { background: var(--bg3); border-radius: 8px; padding: 10px 14px; font-size: 14px; margin-bottom: 10px; color: var(--sub); }
+  .save-btn { width: 100%; padding: 15px; background: var(--green); border: none; border-radius: 10px; color: #0d1117; font-size: 16px; font-weight: 800; cursor: pointer; letter-spacing: 0.5px; margin-top: 8px; transition: all 0.2s; }
+  .save-btn:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+  .save-btn.saved { background: #00c853; }
+  .cancel-edit-btn { width: 100%; padding: 13px; background: var(--border); border: none; border-radius: 10px; color: var(--sub); font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 8px; }
+  .trade-card { background: var(--bg2); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; border: 1px solid var(--border); position: relative; }
+  .trade-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .dir-badge { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 4px; margin-right: 6px; }
+  .dir-long { background: #00e67618; color: var(--green); }
+  .dir-short { background: #ff525218; color: var(--red); }
+  .trade-strat { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .trade-meta { display: flex; gap: 10px; font-size: 11px; color: var(--muted); margin-bottom: 6px; flex-wrap: wrap; }
+  .trade-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag { font-size: 11px; border-radius: 4px; padding: 2px 6px; }
+  .tag-green { background: #00e67612; color: var(--green); }
+  .tag-red { background: #ff525212; color: var(--red); }
+  .tag-neutral { background: var(--border); color: var(--muted); }
+  .pnl-badge { font-size: 13px; font-weight: 800; font-family: monospace; padding: 3px 8px; border-radius: 5px; }
+  .pnl-win { background: #00e67618; color: var(--green); }
+  .pnl-loss { background: #ff525218; color: var(--red); }
+  .pnl-neutral { color: var(--muted); }
+  .trade-actions { display: flex; gap: 6px; margin-top: 8px; }
+  .edit-btn { background: #7c3aed22; border: 1px solid var(--purple); border-radius: 6px; color: var(--purple); font-size: 12px; padding: 5px 12px; cursor: pointer; }
+  .delete-btn { background: #ff525212; border: 1px solid var(--red); border-radius: 6px; color: var(--red); font-size: 12px; padding: 5px 12px; cursor: pointer; }
+  .delete-confirm { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+  .delete-confirm span { color: var(--red); font-size: 12px; }
+  .btn-delete-yes { background: var(--red); border: none; border-radius: 6px; color: #fff; font-size: 12px; padding: 6px 12px; cursor: pointer; }
+  .btn-cancel { background: var(--border); border: none; border-radius: 6px; color: var(--sub); font-size: 12px; padding: 6px 12px; cursor: pointer; }
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .stat-card { background: var(--bg2); border-radius: 10px; padding: 14px 10px; text-align: center; border: 1px solid var(--border); }
+  .stat-val { font-size: 20px; font-weight: 800; font-family: monospace; }
+  .stat-label { font-size: 10px; color: var(--muted); margin-top: 3px; letter-spacing: 0.5px; text-transform: uppercase; }
+  .bar-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .bar-label { width: 90px; color: var(--sub); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-track { flex: 1; background: var(--bg3); border-radius: 3px; height: 6px; }
+  .bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+  .bar-val { width: 65px; text-align: right; font-size: 12px; font-family: monospace; }
+  .bar-pct { width: 32px; text-align: right; font-size: 11px; color: var(--muted); }
+  .total-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border); }
+  .total-label { font-size: 13px; color: var(--muted); }
+  .total-val { font-size: 15px; font-weight: 700; font-family: monospace; }
+  .week-pnl { font-size: 32px; font-weight: 800; font-family: monospace; }
+  .progress-track { background: var(--bg3); border-radius: 6px; height: 8px; margin: 12px 0 4px; }
+  .progress-fill { height: 100%; border-radius: 6px; transition: width 0.5s; }
+  .empty { text-align: center; color: var(--muted); padding: 48px 24px; font-size: 14px; line-height: 1.7; }
+  #toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--green); color: #0d1117; padding: 10px 24px; border-radius: 20px; font-weight: 700; font-size: 14px; opacity: 0; transition: all 0.3s; pointer-events: none; z-index: 999; }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  /* Account tracker */
+  .account-big { font-size: 30px; font-weight: 800; font-family: monospace; }
+  .account-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .account-row:last-child { border-bottom: none; }
+  .day-entry { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .day-entry:last-child { border-bottom: none; }
+  input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  select { background-image: none; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="header">
+    <div>
+      <div class="logo">NEXUS JOURNAL</div>
+      <div class="sublogo" id="header-date">—</div>
+    </div>
+    <div>
+      <div class="header-pnl" id="header-pnl">$0</div>
+      <div class="sublogo" style="text-align:right">all-time P&L</div>
+    </div>
+  </div>
+  <div id="nav">
+    <button class="nav-btn active" onclick="setView('log')">📋 Log</button>
+    <button class="nav-btn" onclick="setView('add')">➕ Add</button>
+    <button class="nav-btn" onclick="setView('stats')">📊 Stats</button>
+    <button class="nav-btn" onclick="setView('week')">📅 Week</button>
+    <button class="nav-btn" onclick="setView('account')">💰 Konto</button>
+  </div>
+  <div id="content"></div>
+</div>
+<div id="toast">✅ Gespeichert!</div>
+<script>
+const STORAGE_KEY = 'nexus-journal-v2';
+const ACCOUNT_KEY = 'nexus-account-v1';
+const INSTRUMENTS = {
+  MES:  { label: 'MES',  pointValue: 5, desc: 'Micro S&P · $5/pt' },
+  MNQ:  { label: 'MNQ',  pointValue: 2, desc: 'Micro Nasdaq · $2/pt' },
+  FDXS: { label: 'FDXS', pointValue: 1, desc: 'Micro DAX · €1/pt', currency: '€' }
+};
+const STRATEGIES = ['ORB', 'Nexus Scalper', 'Manual'];
+const EMOTIONS = ['calm', 'neutral', 'stressed', 'FOMO', 'angry'];
+
+let trades = [];
+let account = { startCapital: '', days: [] }; // days: [{date, pnl, note}]
+let currentView = 'log';
+let deleteConfirm = null;
+let editingId = null; // null = new trade, number = editing existing
+let form = freshForm();
+let accountForm = { date: today(), pnl: '', note: '' };
+
+function today() { return new Date().toISOString().slice(0,10); }
+
+function freshForm() {
+  const now = new Date();
+  return { date: now.toISOString().slice(0,10), time: now.toTimeString().slice(0,5),
+    instrument: 'MES', strategy: 'ORB', direction: 'LONG',
+    entry: '', stop: '', target: '', exit: '', contracts: '1',
+    followedPlan: true, revengeT: false, emotion: 'neutral', note: '' };
+}
+
+function loadData() {
+  try { const r = localStorage.getItem(STORAGE_KEY); trades = r ? JSON.parse(r) : []; } catch { trades = []; }
+  try { const r = localStorage.getItem(ACCOUNT_KEY); if (r) account = JSON.parse(r); } catch {}
+}
+function saveTrades() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(trades)); } catch {} }
+function saveAccount() { try { localStorage.setItem(ACCOUNT_KEY, JSON.stringify(account)); } catch {} }
+
+function calcPnL(trade) {
+  const entry = parseFloat(trade.entry), exit = parseFloat(trade.exit);
+  const contracts = parseInt(trade.contracts) || 1;
+  if (isNaN(entry) || isNaN(exit)) return null;
+  const pts = trade.direction === 'LONG' ? exit - entry : entry - exit;
+  return parseFloat((pts * (INSTRUMENTS[trade.instrument]?.pointValue ?? 5) * contracts).toFixed(2));
+}
+function currSym(instrument) { return INSTRUMENTS[instrument]?.currency || '$'; }
+function pnlBadge(val, instrument) {
+  if (val === null || val === undefined) return '<span class="pnl-badge pnl-neutral">—</span>';
+  const sym = currSym(instrument);
+  return `<span class="pnl-badge ${val >= 0 ? 'pnl-win' : 'pnl-loss'}">${val >= 0 ? '+' : ''}${sym}${Math.abs(val).toFixed(2)}</span>`;
+}
+function miniBar(val, max, color) {
+  const pct = max > 0 ? Math.min((Math.abs(val)/max)*100, 100) : 0;
+  return `<div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>`;
+}
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function showToast(msg) {
+  const t = document.getElementById('toast'); t.textContent = msg || '✅ Gespeichert!';
+  t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function setView(v) {
+  currentView = v; deleteConfirm = null;
+  if (v !== 'add') { editingId = null; }
+  document.querySelectorAll('.nav-btn').forEach((b,i) => b.classList.toggle('active', ['log','add','stats','week','account'][i] === v));
+  render();
+}
+
+// ── FORM EVENTS ──
+window.setField = (k,v) => { form[k]=v; renderContent(); };
+window.setFieldCheck = (k,v) => { form[k] = (v==='true'||v===true); renderContent(); };
+window.updatePreview = () => {
+  ['f-entry','f-exit','f-stop','f-target','f-contracts'].forEach(id => {
+    const el = document.getElementById(id); if (el) form[id.replace('f-','')] = el.value;
+  });
+  const preview = document.getElementById('preview-pnl');
+  if (preview && form.entry && form.exit) {
+    const pnl = calcPnL(form); const sym = currSym(form.instrument);
+    const color = pnl >= 0 ? 'var(--green)' : 'var(--red)';
+    preview.innerHTML = `${form.instrument} Preview: <strong style="color:${color}">${pnl>=0?'+':''}${sym}${Math.abs(pnl).toFixed(2)}</strong> <span style="color:var(--muted);font-size:12px">(${INSTRUMENTS[form.instrument]?.desc})</span>`;
+    preview.style.display = 'block';
+  } else if (preview) preview.style.display = 'none';
+};
+
+window.submitTrade = () => {
+  ['f-entry','f-exit','f-stop','f-target','f-contracts'].forEach(id => {
+    const el = document.getElementById(id); if (el) form[id.replace('f-','')] = el.value;
+  });
+  const noteEl = document.getElementById('f-note'); if (noteEl) form.note = noteEl.value;
+  if (!form.entry || !form.exit) return;
+  const pnl = calcPnL(form);
+  if (editingId !== null) {
+    const idx = trades.findIndex(t => t.id === editingId);
+    if (idx !== -1) trades[idx] = { ...form, id: editingId, pnl };
+    editingId = null;
+    showToast('✅ Trade aktualisiert!');
+  } else {
+    trades.unshift({ ...form, id: Date.now(), pnl });
+    showToast('✅ Trade gespeichert!');
+  }
+  saveTrades(); form = freshForm();
+  setTimeout(() => setView('log'), 600);
+};
+
+window.editTrade = (id) => {
+  const t = trades.find(t => t.id === id); if (!t) return;
+  form = { ...t }; editingId = id;
+  setView('add');
+};
+window.confirmDelete = (id) => { deleteConfirm = id; render(); };
+window.cancelDelete = () => { deleteConfirm = null; render(); };
+window.doDelete = (id) => { trades = trades.filter(t => t.id !== id); saveTrades(); deleteConfirm = null; render(); };
+window.cancelEdit = () => { editingId = null; form = freshForm(); setView('log'); };
+
+// ── ACCOUNT EVENTS ──
+window.saveStartCapital = () => {
+  const el = document.getElementById('start-capital'); if (!el) return;
+  account.startCapital = el.value; saveAccount(); renderContent();
+};
+window.setAccountField = (k,v) => { accountForm[k] = v; };
+window.submitDayPnl = () => {
+  const dateEl = document.getElementById('ac-date');
+  const pnlEl = document.getElementById('ac-pnl');
+  const noteEl = document.getElementById('ac-note');
+  const date = dateEl ? dateEl.value : accountForm.date;
+  const pnl = pnlEl ? parseFloat(pnlEl.value) : parseFloat(accountForm.pnl);
+  const note = noteEl ? noteEl.value : accountForm.note;
+  if (!date || isNaN(pnl)) return;
+  const existing = account.days.findIndex(d => d.date === date);
+  if (existing !== -1) account.days[existing] = { date, pnl, note };
+  else account.days.push({ date, pnl, note });
+  account.days.sort((a,b) => b.date.localeCompare(a.date));
+  saveAccount(); accountForm = { date: today(), pnl: '', note: '' };
+  showToast('✅ Tag gespeichert!'); renderContent();
+};
+window.deleteDayPnl = (date) => {
+  account.days = account.days.filter(d => d.date !== date);
+  saveAccount(); renderContent();
+};
+
+// ── STATS ──
+function calcStats(tradeList) {
+  const closed = tradeList.filter(t => t.pnl !== null && t.pnl !== undefined);
+  if (!closed.length) return null;
+  const wins = closed.filter(t => t.pnl > 0), losses = closed.filter(t => t.pnl < 0);
+  const totalPnl = closed.reduce((s,t) => s+t.pnl, 0);
+  const grossWin = wins.reduce((s,t) => s+t.pnl, 0);
+  const grossLoss = Math.abs(losses.reduce((s,t) => s+t.pnl, 0));
+  const winRate = (wins.length/closed.length)*100;
+  const avgWin = wins.length ? grossWin/wins.length : 0;
+  const avgLoss = losses.length ? grossLoss/losses.length : 0;
+  const profitFactor = grossLoss > 0 ? grossWin/grossLoss : grossWin > 0 ? 999 : 0;
+  const disciplined = closed.filter(t => t.followedPlan && !t.revengeT).length;
+  const expectancy = (winRate/100)*avgWin - ((100-winRate)/100)*avgLoss;
+  const byStrategy = {};
+  STRATEGIES.forEach(s => {
+    const st = closed.filter(t => t.strategy === s);
+    if (st.length) { const sw = st.filter(t => t.pnl > 0); byStrategy[s] = { count: st.length, pnl: st.reduce((a,t) => a+t.pnl,0), winRate: (sw.length/st.length)*100 }; }
+  });
+  const byInstrument = {};
+  Object.keys(INSTRUMENTS).forEach(inst => {
+    const it = closed.filter(t => (t.instrument||'MES') === inst);
+    if (it.length) { const iw = it.filter(t => t.pnl > 0); byInstrument[inst] = { count: it.length, pnl: it.reduce((a,t) => a+t.pnl,0), winRate: (iw.length/it.length)*100 }; }
+  });
+  const byDay = {}; const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  closed.forEach(t => { const d = dayNames[new Date(t.date).getDay()]; if (!byDay[d]) byDay[d]={pnl:0,count:0}; byDay[d].pnl+=t.pnl; byDay[d].count++; });
+  return { total: closed.length, wins: wins.length, losses: losses.length, totalPnl, winRate, avgWin, avgLoss, profitFactor, expectancy, disciplinePct: (disciplined/closed.length)*100, byStrategy, byInstrument, byDay };
+}
+
+// ── RENDER ──
+function render() {
+  const totalPnl = trades.reduce((s,t) => s+(t.pnl||0), 0);
+  const pnlEl = document.getElementById('header-pnl');
+  if (pnlEl) { pnlEl.textContent = `${totalPnl>=0?'+':''}$${totalPnl.toFixed(0)}`; pnlEl.style.color = totalPnl>=0?'var(--green)':'var(--red)'; }
+  const dateEl = document.getElementById('header-date');
+  if (dateEl) dateEl.textContent = new Date().toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'short'});
+  renderContent();
+}
+
+function renderContent() {
+  const el = document.getElementById('content'); if (!el) return;
+  if (currentView==='add') el.innerHTML = renderAdd();
+  else if (currentView==='log') el.innerHTML = renderLog();
+  else if (currentView==='stats') el.innerHTML = renderStats();
+  else if (currentView==='week') el.innerHTML = renderWeek();
+  else if (currentView==='account') el.innerHTML = renderAccount();
+}
+
+function renderAdd() {
+  const isEdit = editingId !== null;
+  const pnl = calcPnL(form);
+  const sym = currSym(form.instrument);
+  const previewHtml = (form.entry && form.exit && pnl !== null)
+    ? `<div class="preview-pnl" id="preview-pnl">${form.instrument} Preview: <strong style="color:${pnl>=0?'var(--green)':'var(--red)'}">${pnl>=0?'+':''}${sym}${Math.abs(pnl).toFixed(2)}</strong> <span style="color:var(--muted);font-size:12px">(${INSTRUMENTS[form.instrument]?.desc})</span></div>`
+    : `<div class="preview-pnl" id="preview-pnl" style="display:none"></div>`;
+  const instBtns = Object.entries(INSTRUMENTS).map(([k,v]) =>
+    `<button class="toggle-btn ${form.instrument===k?'instrument-active':''}" onclick="setField('instrument','${k}')"><div class="t-main">${v.label}</div><div class="t-sub">${v.desc}</div></button>`).join('');
+  const stratOptions = STRATEGIES.map(s => `<option value="${s}" ${form.strategy===s?'selected':''}>${s}</option>`).join('');
+  const emotionChips = EMOTIONS.map(e => `<button class="chip ${form.emotion===e?'active':''}" onclick="setField('emotion','${e}')">${e}</button>`).join('');
+  return `
+    <div class="card">
+      <div class="section-title">${isEdit ? '✏️ Trade bearbeiten' : 'Neuer Trade'}</div>
+      <div class="field mb10"><label>Instrument</label><div class="toggle">${instBtns}</div></div>
+      <div class="row2">
+        <div class="field"><label>Datum</label><input type="date" value="${form.date}" onchange="setField('date',this.value)"></div>
+        <div class="field"><label>Zeit (MEZ)</label><input type="time" value="${form.time}" onchange="setField('time',this.value)"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Strategie</label><select onchange="setField('strategy',this.value)">${stratOptions}</select></div>
+        <div class="field"><label>Richtung</label><div class="toggle">
+          <button class="toggle-btn ${form.direction==='LONG'?'long':''}" onclick="setField('direction','LONG')">LONG</button>
+          <button class="toggle-btn ${form.direction==='SHORT'?'short':''}" onclick="setField('direction','SHORT')">SHORT</button>
+        </div></div>
+      </div>
+      <div class="row3">
+        <div class="field"><label>Entry</label><input id="f-entry" type="number" placeholder="5300" value="${form.entry}" oninput="updatePreview()"></div>
+        <div class="field"><label>Stop</label><input id="f-stop" type="number" placeholder="5295" value="${form.stop}" oninput="updatePreview()"></div>
+        <div class="field"><label>Target</label><input id="f-target" type="number" placeholder="5310" value="${form.target}" oninput="updatePreview()"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Exit Preis</label><input id="f-exit" type="number" placeholder="5308" value="${form.exit}" oninput="updatePreview()"></div>
+        <div class="field"><label>Kontrakte</label><input id="f-contracts" type="number" min="1" value="${form.contracts}" oninput="updatePreview()"></div>
+      </div>
+      ${previewHtml}
+      <div class="section-title mt16">Disziplin Check</div>
+      <div class="row2">
+        <div class="field"><label>Plan befolgt?</label><div class="toggle">
+          <button class="toggle-btn ${form.followedPlan?'yes':''}" onclick="setFieldCheck('followedPlan',true)">✅ Ja</button>
+          <button class="toggle-btn ${!form.followedPlan?'no':''}" onclick="setFieldCheck('followedPlan',false)">❌ Nein</button>
+        </div></div>
+        <div class="field"><label>Revenge Trade?</label><div class="toggle">
+          <button class="toggle-btn ${!form.revengeT?'yes':''}" onclick="setFieldCheck('revengeT',false)">✅ Nein</button>
+          <button class="toggle-btn ${form.revengeT?'no':''}" onclick="setFieldCheck('revengeT',true)">⚠️ Ja</button>
+        </div></div>
+      </div>
+      <div class="field mb10"><label>Emotion</label><div class="chips">${emotionChips}</div></div>
+      <div class="field mb10"><label>Notiz (optional)</label><textarea id="f-note" placeholder="Was ist passiert?">${esc(form.note)}</textarea></div>
+      <button class="save-btn" onclick="submitTrade()" ${!form.entry||!form.exit?'disabled':''}>${isEdit?'✅ Änderungen speichern':'Trade speichern'}</button>
+      ${isEdit ? `<button class="cancel-edit-btn" onclick="cancelEdit()">Abbrechen</button>` : ''}
+    </div>`;
+}
+
+function renderLog() {
+  if (!trades.length) return '<div class="empty">Noch keine Trades.<br>Tippe auf ➕ Add um deinen ersten Trade einzutragen.</div>';
+  return trades.map(t => {
+    const isConfirm = deleteConfirm === t.id;
+    return `
+    <div class="trade-card">
+      <div class="trade-header">
+        <div><span class="dir-badge ${t.direction==='LONG'?'dir-long':'dir-short'}">${t.direction}</span><span class="trade-strat">${esc(t.strategy)} · ${esc(t.instrument||'MES')}</span></div>
+        ${pnlBadge(t.pnl, t.instrument)}
+      </div>
+      <div class="trade-meta"><span>${t.date} ${t.time}</span><span>${t.contracts}x ${t.instrument||'MES'}</span><span>${t.entry} → ${t.exit}</span></div>
+      <div class="trade-tags">
+        ${t.followedPlan?'<span class="tag tag-green">✅ Plan</span>':'<span class="tag tag-red">❌ Kein Plan</span>'}
+        ${t.revengeT?'<span class="tag tag-red">⚠️ Revenge</span>':''}
+        <span class="tag tag-neutral">${esc(t.emotion)}</span>
+        ${t.note?`<span class="tag tag-neutral">📝 ${esc(t.note.slice(0,20))}${t.note.length>20?'…':''}</span>`:''}
+      </div>
+      ${isConfirm
+        ? `<div class="delete-confirm"><span>Trade löschen?</span><button class="btn-delete-yes" onclick="doDelete(${t.id})">Ja</button><button class="btn-cancel" onclick="cancelDelete()">Nein</button></div>`
+        : `<div class="trade-actions"><button class="edit-btn" onclick="editTrade(${t.id})">✏️ Bearbeiten</button><button class="delete-btn" onclick="confirmDelete(${t.id})">🗑 Löschen</button></div>`
+      }
+    </div>`;
+  }).join('');
+}
+
+function renderStats() {
+  const stats = calcStats(trades);
+  if (!stats) return '<div class="empty">Mindestens einen Trade loggen um Stats zu sehen.</div>';
+  const statCards = [
+    ['Win Rate', `${stats.winRate.toFixed(1)}%`, stats.winRate>=50?'var(--green)':'var(--red)'],
+    ['Profit Factor', stats.profitFactor>=999?'∞':stats.profitFactor.toFixed(2), stats.profitFactor>=1.5?'var(--green)':'var(--orange)'],
+    ['Expectancy', `$${stats.expectancy.toFixed(0)}`, stats.expectancy>=0?'var(--green)':'var(--red)'],
+    ['Disziplin', `${stats.disciplinePct.toFixed(0)}%`, stats.disciplinePct>=80?'var(--green)':'var(--orange)'],
+    ['Ø Winner', `$${stats.avgWin.toFixed(0)}`, 'var(--green)'],
+    ['Ø Loser', `-$${stats.avgLoss.toFixed(0)}`, 'var(--red)'],
+  ].map(([l,v,c]) => `<div class="stat-card"><div class="stat-val" style="color:${c}">${v}</div><div class="stat-label">${l}</div></div>`).join('');
+  const stratRows = Object.entries(stats.byStrategy).map(([s,d]) => {
+    const max = Math.max(...Object.values(stats.byStrategy).map(x=>Math.abs(x.pnl)));
+    const col = d.pnl>=0?'var(--green)':'var(--red)';
+    return `<div class="bar-row"><div class="bar-label">${s}</div>${miniBar(d.pnl,max,col)}<div class="bar-val" style="color:${col}">${d.pnl>=0?'+':''}$${d.pnl.toFixed(0)}</div><div class="bar-pct">${d.winRate.toFixed(0)}%W</div></div>`;
+  }).join('');
+  const instRows = Object.entries(stats.byInstrument).map(([inst,d]) => {
+    const max = Math.max(...Object.values(stats.byInstrument).map(x=>Math.abs(x.pnl)));
+    const col = d.pnl>=0?'var(--green)':'var(--red)'; const sym = currSym(inst);
+    return `<div class="bar-row"><div class="bar-label">${inst}</div>${miniBar(d.pnl,max,col)}<div class="bar-val" style="color:${col}">${d.pnl>=0?'+':''}${sym}${Math.abs(d.pnl).toFixed(0)}</div><div class="bar-pct">${d.winRate.toFixed(0)}%W</div></div>`;
+  }).join('');
+  const dayOrder=['Mon','Tue','Wed','Thu','Fri'];
+  const maxDay = Math.max(...Object.values(stats.byDay).map(x=>Math.abs(x.pnl)),1);
+  const dayRows = dayOrder.filter(d=>stats.byDay[d]).map(d => {
+    const dd=stats.byDay[d]; const col=dd.pnl>=0?'var(--green)':'var(--red)';
+    return `<div class="bar-row"><div class="bar-label">${d}</div>${miniBar(dd.pnl,maxDay,col)}<div class="bar-val" style="color:${col}">${dd.pnl>=0?'+':''}$${dd.pnl.toFixed(0)}</div><div class="bar-pct">${dd.count}T</div></div>`;
+  }).join('');
+  return `
+    <div class="stats-grid">${statCards}</div>
+    ${stratRows?`<div class="card"><div class="section-title">Nach Strategie</div>${stratRows}</div>`:''}
+    ${instRows?`<div class="card"><div class="section-title">MES vs MNQ vs FDXS</div>${instRows}</div>`:''}
+    ${dayRows?`<div class="card"><div class="section-title">Nach Wochentag</div>${dayRows}</div>`:''}
+    <div class="card">
+      <div class="section-title">Gesamt</div>
+      <div class="total-row"><span class="total-label">Trades gesamt</span><span class="total-val">${stats.total}</span></div>
+      <div class="total-row"><span class="total-label">Wins / Losses</span><span class="total-val"><span style="color:var(--green)">${stats.wins}W</span> / <span style="color:var(--red)">${stats.losses}L</span></span></div>
+      <div class="total-row"><span class="total-label">Gesamt P&L</span><span class="total-val" style="color:${stats.totalPnl>=0?'var(--green)':'var(--red)'}">${stats.totalPnl>=0?'+':''}$${stats.totalPnl.toFixed(2)}</span></div>
+    </div>`;
+}
+
+function renderWeek() {
+  const now = new Date(); const weekStart = new Date(now);
+  weekStart.setDate(now.getDate()-((now.getDay()+6)%7)); weekStart.setHours(0,0,0,0);
+  const weekTrades = trades.filter(t => new Date(t.date) >= weekStart);
+  const weekPnl = weekTrades.reduce((s,t) => s+(t.pnl||0), 0);
+  const goalPct = Math.min((weekPnl/2500)*100, 100);
+  const col = weekPnl>=0?'var(--green)':'var(--red)';
+  const cards = weekTrades.length ? weekTrades.map(t => `
+    <div class="trade-card">
+      <div class="trade-header">
+        <div><span class="dir-badge ${t.direction==='LONG'?'dir-long':'dir-short'}">${t.direction}</span><span class="trade-strat">${esc(t.strategy)} · ${esc(t.instrument||'MES')}</span></div>
+        ${pnlBadge(t.pnl, t.instrument)}
+      </div>
+      <div class="trade-meta"><span>${t.date} ${t.time}</span><span>${t.contracts}x ${t.instrument||'MES'}</span></div>
+      <div class="trade-tags">
+        ${t.followedPlan?'<span class="tag tag-green">✅ Plan</span>':'<span class="tag tag-red">❌ Kein Plan</span>'}
+        ${t.revengeT?'<span class="tag tag-red">⚠️ Revenge</span>':''}
+        <span class="tag tag-neutral">${esc(t.emotion)}</span>
+      </div>
+    </div>`).join('') : '<div class="empty">Noch keine Trades diese Woche.</div>';
+  return `
+    <div class="card">
+      <div class="section-title">Diese Woche</div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><div class="week-pnl" style="color:${col}">${weekPnl>=0?'+':''}$${weekPnl.toFixed(2)}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">${weekTrades.length} Trades</div></div>
+        <div style="text-align:right"><div style="font-size:13px;color:var(--sub)">Ziel: $2.500/Woche</div><div style="font-size:11px;color:var(--muted)">→ 500$/Tag</div></div>
+      </div>
+      <div class="progress-track"><div class="progress-fill" style="width:${Math.max(goalPct,0)}%;background:${col}"></div></div>
+      <div style="font-size:11px;color:var(--muted);text-align:right">${goalPct.toFixed(0)}% des Wochenziels</div>
+    </div>${cards}`;
+}
+
+function renderAccount() {
+  const start = parseFloat(account.startCapital);
+  const hasStart = !isNaN(start) && start > 0;
+  const totalChange = account.days.reduce((s,d) => s + (parseFloat(d.pnl)||0), 0);
+  const currentBalance = hasStart ? start + totalChange : null;
+  const drawdown = hasStart ? ((currentBalance - start) / start) * 100 : null;
+
+  // Today's pnl from days array
+  const todayEntry = account.days.find(d => d.date === today());
+
+  return `
+    <div class="card">
+      <div class="section-title">Startkapital</div>
+      <div class="row2">
+        <div class="field"><label>Kapital ($)</label><input id="start-capital" type="number" placeholder="500" value="${esc(account.startCapital)}" style="font-size:18px;font-weight:700"></div>
+        <div style="display:flex;align-items:flex-end"><button class="save-btn" style="margin:0;padding:11px" onclick="saveStartCapital()">Speichern</button></div>
+      </div>
+    </div>
+
+    ${hasStart ? `
+    <div class="card">
+      <div class="section-title">Kontostand</div>
+      <div class="account-big" style="color:${currentBalance>=start?'var(--green)':'var(--red)'}">${currentBalance>=0?'$':''}${currentBalance?.toFixed(2)}</div>
+      <div style="margin-top:8px">
+        <div class="account-row"><span style="color:var(--muted)">Startkapital</span><span>$${start.toFixed(2)}</span></div>
+        <div class="account-row"><span style="color:var(--muted)">Gesamt P&L</span><span style="color:${totalChange>=0?'var(--green)':'var(--red)'}">${totalChange>=0?'+':''}$${totalChange.toFixed(2)}</span></div>
+        <div class="account-row"><span style="color:var(--muted)">Wachstum</span><span style="color:${drawdown>=0?'var(--green)':'var(--red)'}">${drawdown>=0?'+':''}${drawdown?.toFixed(1)}%</span></div>
+        <div class="account-row"><span style="color:var(--muted)">Eingetragene Tage</span><span>${account.days.length}</span></div>
+      </div>
+    </div>` : ''}
+
+    <div class="card">
+      <div class="section-title">Tages P&L eintragen</div>
+      <div class="row2">
+        <div class="field"><label>Datum</label><input id="ac-date" type="date" value="${today()}"></div>
+        <div class="field"><label>P&L ($)</label><input id="ac-pnl" type="number" placeholder="-50 oder +120" value="${todayEntry?.pnl||''}"></div>
+      </div>
+      <div class="field mb10"><label>Notiz (optional)</label><input id="ac-note" type="text" placeholder="z.B. 2 ORB Trades" value="${esc(todayEntry?.note||'')}"></div>
+      <button class="save-btn" style="margin-top:0" onclick="submitDayPnl()">Tag speichern</button>
+    </div>
+
+    ${account.days.length ? `
+    <div class="card">
+      <div class="section-title">Verlauf</div>
+      ${account.days.map(d => {
+        const p = parseFloat(d.pnl); const col = p>=0?'var(--green)':'var(--red)';
+        return `<div class="day-entry">
+          <div><div style="font-size:13px;font-weight:600">${d.date}</div>${d.note?`<div style="font-size:11px;color:var(--muted)">${esc(d.note)}</div>`:''}</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="color:${col};font-weight:800;font-family:monospace">${p>=0?'+':''}$${p.toFixed(2)}</span>
+            <button onclick="deleteDayPnl('${d.date}')" style="background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer">🗑</button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>` : ''}`;
+}
+
+loadData();
+render();
+</script>
+</body>
+</html>
